@@ -1,0 +1,189 @@
+﻿# Mp3tag (v2.39+) parsing for maniadb, created by dano in 2010-09-16
+# updated by xfactor (maniadb api developer) in 2014-08-31
+# updated by myungcheol in 2015-12-14
+#
+# This *.src file must be placed in your sources directory. 
+# On Windows XP it's C:\Documents and Settings\*username*\Application Data\Mp3tag\data\sources
+#
+# You can quickly reach it with [Windows Key + R] and enter %appdata%\Mp3tag\data\sources
+# Or enter %appdata%\Mp3tag\data\sources in the Explorer address bar
+#
+#    ->  Replace XXXXXXXXXXXXXXXXXXXX with your email address  <-
+#
+# 탐색기나 실행(윈도우키 + R)에서 %appdaa%\Mp3tag\data\sources를 입력하여 나오는 폴더에 이 파일을 저장하면 됩니다.
+# 아래에 있는 XXXXXXXXX라고 된 부분은 본인의 이메일 주소로 바꿔서 사용하시면 됩니다. 2곳을 바꿔야 합니다.
+
+[Name]=maniadb
+[BasedOn]=www.maniadb.com
+[IndexUrl]=http://gp-gfarm.rhcloud.com/maniadb/?keyword=%s&key=XXXXXXXXXXXXXXXXXXXX
+[AlbumUrl]=http://www.maniadb.com/api/album/
+[WordSeperator]=%20
+[IndexFormat]=%_url%|%앨범%|%발매년도%|%수록곡%|%_preview%
+[SearchBy]=%title%
+[UserAgent]=1
+[Encoding]=utf-8
+
+[ParserScriptIndex]=...
+# ###################################################################
+#					I  N  D  E  X
+# ###################################################################
+debug "on" "C:\Users\myungcheol\AppData\Roaming\Mp3tag\data\index.txt"
+json "on"
+
+if "item"
+	json_foreach "item"
+		json_select_object "attrs"
+			json_select "id"
+			sayrest
+		json_unselect_object
+		say "?keyXXXXXXXXXXXXXXXXXXXX@gmail.com&v=0.5|"
+		
+		json_select_object "maniadb:release"
+			json_select "release_title"
+			sayrest
+			say "|"
+
+			json_select "release_date"
+			saynchars 4
+			say "|"
+		json_unselect_object
+
+		json_select_object "maniadb:albumtrack"
+			json_select "maniadb:tracklist"
+			sayrest
+		json_unselect_object
+		say "|"
+
+		json_select "link"
+		sayrest
+
+		saynewline
+	json_foreach_end	
+endif
+json "off"
+
+[ParserScriptAlbum]=...
+# ###################################################################
+#					A  L  B  U  M
+# ###################################################################
+#debug "on" "c:\yDebug\debug_maniadb_B.htm" "10"
+#debugwriteinput "C:\yDebug\madiadb_B.xml"
+
+# Description
+outputto "Comment"
+findline "<description><![CDATA["
+findinline "<description><![CDATA[" 
+sayuntil "]]></description>"
+
+# Artist
+outputto "ALBUMARTIST"
+findline "<maniadb:albumartists>"
+findinline "<maniadb:albumartists><![CDATA["
+sayuntil "]]></maniadb:albumartists>"
+
+
+# Album
+outputto "Album"
+findline "<release_title><![CDATA["
+findinline "<release_title><![CDATA["
+sayuntil "]]>"
+
+# Year
+outputto "Year"
+findline "<release_year>"
+findinline "<release_year><![CDATA[" 
+sayuntil "]]>"
+
+# ReleaseDate
+outputto "ReleaseDate"
+findline "<release_date>"
+findinline "<release_date><![CDATA[" 
+sayuntil "]]>"
+
+# Publisher
+outputto "Publisher"
+findline "<release_company>"
+findinline "<release_company><![CDATA[" 
+sayuntil "]]>"
+
+gotoline 1
+
+findline "<title>" 1 1
+findinline " / " 1 1
+movechar -3
+
+
+if " / "
+	# VA ########################
+	
+
+
+# Tracks
+findline "<song track"
+do
+	outputto "tracks"
+	findline "<title><![CDATA["
+	findinline "<title><![CDATA["
+	sayuntil "]]>"
+	say "|"
+	
+	moveline 1 1
+	outputto "_length"
+	sayregexp "(?<=<runningtime>)[^<]+(?=</run)" ""
+	say "|"
+	
+	moveline 1 1
+	outputto "Artist"
+	findinline "><![CDATA["
+	sayuntil "]]>"
+	say "|"
+	
+	findline "<song track" 2 1
+while "<song track" 555
+
+
+	
+else # ############################
+
+# Tracks
+findline "<song track=\""
+do
+	outputto "tracks"
+	findline "<title><![CDATA["
+	findinline "<title><![CDATA["
+	sayuntil "]]>"
+	say "|"
+	
+	moveline 1 1
+	outputto "_length"
+	findline "<runningtime>"
+	findinline "<runningtime>"
+	sayuntil "</runningtime>"
+	say "|"
+
+	moveline 1 1
+	outputto "Artist"
+	findline "<performer"
+	findinline "><![CDATA["
+	sayuntil "]]>"
+	say "|"
+
+	findline "</song>"
+	moveline 1 1
+	unspace
+while "<song track=\"" 555
+
+
+endif # ####################################
+
+
+# Cover
+gotoline 1
+findline "<image><![CDATA[" 1 1
+unspace
+if "<image>"
+	outputto "coverurl"
+	findinline "<image><![CDATA[" 1 1
+	sayuntil "]]>"
+endif
+
